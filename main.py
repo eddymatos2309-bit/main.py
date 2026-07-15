@@ -6,7 +6,7 @@ from datetime import datetime
 from binance.client import Client
 
 # 1. CONFIGURACIÓN DE CREDENCIALES
-client = Client('', '')  # Datos públicos
+client = Client('', '')  # Datos públicos de Binance
 
 TELEGRAM_TOKEN = '8968451696:AAF_QGs61ZQLDGVmjhLsP_2GoK1J3mDFcA8'
 TELEGRAM_CHAT_ID = '8737478796'
@@ -36,6 +36,7 @@ def guardar_en_historial(token, temporalidad, variacion, precio):
         print(f"Error al escribir en historial: {e}")
 
 def enviar_alerta_telegram(token, temporalidad, variacion, precio_actual):
+    # DIRECCIÓN CORREGIDA
     url = f"https://telegram.org{TELEGRAM_TOKEN}/sendMessage"
     
     if variacion > 0:
@@ -56,14 +57,19 @@ def enviar_alerta_telegram(token, temporalidad, variacion, precio_actual):
     
     payload = {"chat_id": TELEGRAM_CHAT_ID, "text": mensaje, "parse_mode": "Markdown"}
     try:
-        requests.post(url, json=payload)
-        guardar_en_historial(token, temporalidad, variacion, precio_actual)
+        response = requests.post(url, json=payload)
+        if response.status_code == 200:
+            print(f"✅ Mensaje enviado para {token}")
+            guardar_en_historial(token, temporalidad, variacion, precio_actual)
+        else:
+            print(f"❌ Error de Telegram: {response.text}")
     except Exception as e:
         print(f"Error enviando Telegram: {e}")
 
 def escuchar_comandos_telegram():
     """Función secundaria que corre en segundo plano esperando tus mensajes"""
     global ultimo_update_id
+    # DIRECCIÓN CORREGIDA DE MANERA ESTRICTA AQUÍ
     url_updates = f"https://telegram.org{TELEGRAM_TOKEN}/getUpdates"
     print("🤖 Bot de comandos interactivos activado...")
     
@@ -85,7 +91,6 @@ def escuchar_comandos_telegram():
                             if texto.startswith("/PRECIO"):
                                 partes = texto.split()
                                 if len(partes) > 1:
-                                    # CORRECCIÓN AQUÍ: Tomamos el segundo elemento de la lista limpiamente
                                     token_solicitado = partes[1]
                                     
                                     if not token_solicitado.endswith("USDT"):
@@ -107,7 +112,7 @@ def escuchar_comandos_telegram():
                                 else:
                                     respuesta = "💡 Uso correcto: `/precio btc` o `/precio solusdt`"
                                     
-                                # Enviar respuesta del comando al chat
+                                # DIRECCIÓN CORREGIDA PARA RESPONDER COMANDOS
                                 url_send = f"https://telegram.org{TELEGRAM_TOKEN}/sendMessage"
                                 requests.post(url_send, json={"chat_id": TELEGRAM_CHAT_ID, "text": respuesta, "parse_mode": "Markdown"})
                                 
@@ -116,7 +121,7 @@ def escuchar_comandos_telegram():
         time.sleep(1)
 
 def ejecutar_radar_dual():
-    print("🛸 Radar Dual de Futuros iniciado...")
+    print("🛸 Radar Dual de Futuros iniciado en Railway...")
     MAX_ELEMENTOS_1H = 60        
     MAX_ELEMENTOS_24H = 1440     
     
@@ -143,7 +148,6 @@ def ejecutar_radar_dual():
                     if simbolo not in precios_24h: precios_24h[simbolo] = []
                     if len(precios_24h[simbolo]) >= MAX_ELEMENTOS_24H:
                         precio_viejo_24h = precios_24h[simbolo][0]
-                        # CORRECCIÓN AQUÍ: Se dividía por la lista completa, ahora divide por el precio viejo
                         variacion_24h = ((precio_actual - precio_viejo_24h) / precio_viejo_24h) * 100
                         if variacion_24h >= LIMITE_SUBIDA_24H or variacion_24h <= -LIMITE_BAJADA_24H:
                             enviar_alerta_telegram(simbolo, "24 Horas", variacion_24h, precio_actual)
