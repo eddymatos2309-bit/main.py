@@ -8,20 +8,21 @@ client = Client('', '')  # Datos públicos de Binance
 TELEGRAM_TOKEN = '8968451696:AAF_QGs61ZQLDGVmjhLsP_2GoK1J3mDFcA8'
 TELEGRAM_CHAT_ID = '8737478796'
 
-# 2. PARÁMETROS DEL RADAR (Valores bajos para la prueba)
-LIMITE_SUBIDA_1H = 0.01  
-LIMITE_BAJADA_1H = 0.01   
-LIMITE_SUBIDA_24H = 50.0 
-LIMITE_BAJADA_24H = 50.0  
-INTERVALO_BASE = 60  
+# 2. PARÁMETROS DEL RADAR EN PRODUCCIÓN
+LIMITE_SUBIDA_1H = 300.0  # Alerta si sube más de +300% en una hora
+LIMITE_BAJADA_1H = 50.0   # Alerta si cae más de -50% en una hora
+
+LIMITE_SUBIDA_24H = 500.0 # Alerta si sube más de +500% en 24 horas
+LIMITE_BAJADA_24H = 70.0  # Alerta si cae más de -70% en 24 horas
+
+INTERVALO_BASE = 60  # Escaneo del mercado minuto a minuto
 
 precios_1h = {}   
 precios_24h = {}  
 ultimo_update_id = 0  
 
 def enviar_alerta_telegram(token, temporalidad, variacion, precio_actual):
-    # LA ESTRUCTURA GANADORA: Usada estrictamente aquí
-    url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
+    url = f"https://telegram.org{TELEGRAM_TOKEN}/sendMessage"
     
     if variacion > 0:
         direccion = "🚀 *EXPLOSIÓN AL ALZA (PUMP)*"
@@ -42,16 +43,14 @@ def enviar_alerta_telegram(token, temporalidad, variacion, precio_actual):
     try:
         response = requests.post(url, json=payload)
         if response.status_code == 200:
-            print(f"✅ Mensaje enviado con éxito para {token}")
+            print(f"✅ Alerta de mercado enviada para {token}")
     except Exception as e:
         print(f"Error enviando Telegram: {e}")
 
 def revisar_comandos_unificado():
-    """Revisa los comandos de Telegram usando la misma base estructural de URL"""
+    """Revisa los comandos de Telegram usando la estructura de URL inmutable"""
     global ultimo_update_id
-    
-    # Aplicamos la misma sintaxis que confirmaste que funciona
-    url_updates = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/getUpdates"
+    url_updates = f"https://telegram.org{TELEGRAM_TOKEN}/getUpdates"
     
     try:
         params = {"timeout": 0}
@@ -92,16 +91,17 @@ def revisar_comandos_unificado():
                                 else:
                                     respuesta = "💡 Uso correcto: `/precio btc`"
                                     
-                                # APLICAMOS LA SINTAXIS GANADORA PARA RESPONDER EL COMANDO
-                                url_send = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
+                                url_send = f"https://telegram.org{TELEGRAM_TOKEN}/sendMessage"
                                 requests.post(url_send, json={"chat_id": TELEGRAM_CHAT_ID, "text": respuesta, "parse_mode": "Markdown"})
     except Exception as e:
-        print(f"⚠️ Error al leer comandos: {e}")
+        pass
 
 def ejecutar_radar_dual():
-    print("🛸 Radar Dual Unificado Iniciado con URLs Seguras...")
-    MAX_ELEMENTOS_1H = 2        
-    MAX_ELEMENTOS_24H = 1440     
+    print("🛸 Radar Dual de Futuros iniciado en modo de PRODUCCIÓN...")
+    
+    # MARCOS TEMPORALES REALES EN MINUTOS
+    MAX_ELEMENTOS_1H = 60        # 60 minutos = 1 hora real
+    MAX_ELEMENTOS_24H = 1440     # 1440 minutos = 24 horas reales
     
     print("⏳ Sincronizando bandeja de entrada con Telegram...")
     revisar_comandos_unificado()
@@ -120,7 +120,7 @@ def ejecutar_radar_dual():
                         precio_viejo_1h = precios_1h[simbolo][0]
                         variacion_1h = ((precio_actual - precio_viejo_1h) / precio_viejo_1h) * 100
                         if variacion_1h >= LIMITE_SUBIDA_1H or variacion_1h <= -LIMITE_BAJADA_1H:
-                            enviar_alerta_telegram(simbolo, "1 Hora (Prueba)", variacion_1h, precio_actual)
+                            enviar_alerta_telegram(simbolo, "1 Hora", variacion_1h, precio_actual)
                             precios_1h[simbolo].clear()  
                     precios_1h[simbolo].append(precio_actual)
                     if len(precios_1h[simbolo]) > MAX_ELEMENTOS_1H: precios_1h[simbolo].pop(0)
@@ -135,11 +135,10 @@ def ejecutar_radar_dual():
                             precios_24h[simbolo].clear()  
                     precios_24h[simbolo].append(precio_actual)
                     if len(precios_24h[simbolo]) > MAX_ELEMENTOS_24H: precios_24h[simbolo].pop(0)
-            print("⏳ Ciclo de escaneo completado.")
+            print("⏳ Ciclo de escaneo completado con éxito.")
         except Exception as e:
-            print(f"⚠️ Error: {e}")
+            print(f"⚠️ Error en ciclo Binance: {e}")
             
-        # El script revisa tu chat segundo a segundo para responder al instante
         for _ in range(INTERVALO_BASE):
             revisar_comandos_unificado()
             time.sleep(1)
