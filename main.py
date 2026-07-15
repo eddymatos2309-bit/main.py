@@ -9,17 +9,20 @@ client = Client('', '')  # No requiere llaves para leer datos públicos
 TELEGRAM_TOKEN = '8968451696:AAF_QGs61ZQLDGVmjhLsP_2GoK1J3mDFcA8'
 TELEGRAM_CHAT_ID = '8737478796'
 
-# 2. PARÁMETROS DEL RADAR (Valores bajos para la prueba rápida)
-LIMITE_1H = 500.0   
-LIMITE_24H = 50.0  
-INTERVALO_BASE = 60  
+# 2. PARÁMETROS DEL RADAR PERSONALIZADOS (Ajusta estos valores a tu gusto)
+LIMITE_SUBIDA_1H = 300.0  # Alerta si sube más de +300% en 1 hora
+LIMITE_BAJADA_1H = 50.0   # Alerta si cae más de -50% en 1 hora
+
+LIMITE_SUBIDA_24H = 500.0 # Alerta si sube más de +500% en 24 horas
+LIMITE_BAJADA_24H = 70.0  # Alerta si cae más de -70% en 24 horas
+
+INTERVALO_BASE = 60  # Revisión cada 1 minuto
 
 precios_1h = {}   
 precios_24h = {}  
 
 def enviar_alerta_telegram(token, temporalidad, variacion, precio_actual):
-    # URL Oficial de Telegram Corregida
-    url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
+    url = f"https://telegram.org{TELEGRAM_TOKEN}/sendMessage"
     
     if variacion > 0:
         direccion = "🚀 *EXPLOSIÓN AL ALZA (PUMP)*"
@@ -48,8 +51,10 @@ def enviar_alerta_telegram(token, temporalidad, variacion, precio_actual):
         print(f"Error enviando Telegram: {e}")
 
 def ejecutar_radar_dual():
-    print("🛸 Radar Dual de Futuros iniciado en Railway...")
-    MAX_ELEMENTOS_1H = 2        
+    print("🛸 Radar Dual de Futuros (Límites Separados) iniciado...")
+    
+    # IMPORTANTE: Cambia a 60 para medir 1 hora real cuando termines tus pruebas
+    MAX_ELEMENTOS_1H = 60        
     MAX_ELEMENTOS_24H = 1440     
     
     while True:
@@ -60,25 +65,31 @@ def ejecutar_radar_dual():
                 if simbolo.endswith('USDT'):
                     precio_actual = float(ticker['lastPrice'])
                     
-                    # Evaluación 1 Hora
+                    # --- EVALUACIÓN 1 HORA ---
                     if simbolo not in precios_1h: precios_1h[simbolo] = []
                     if len(precios_1h[simbolo]) >= MAX_ELEMENTOS_1H:
                         precio_viejo_1h = precios_1h[simbolo][0]
                         variacion_1h = ((precio_actual - precio_viejo_1h) / precio_viejo_1h) * 100
-                        if abs(variacion_1h) >= LIMITE_1H:
-                            enviar_alerta_telegram(simbolo, "1 Hora (Prueba)", variacion_1h, precio_actual)
-                            precios_1h[simbolo].clear()  # Reinicio limpio de memoria
+                        
+                        # Lógica separada: Evalúa subidas o bajadas de forma independiente
+                        if variacion_1h >= LIMITE_SUBIDA_1H or variacion_1h <= -LIMITE_BAJADA_1H:
+                            enviar_alerta_telegram(simbolo, "1 Hora", variacion_1h, precio_actual)
+                            precios_1h[simbolo].clear()  
+                            
                     precios_1h[simbolo].append(precio_actual)
                     if len(precios_1h[simbolo]) > MAX_ELEMENTOS_1H: precios_1h[simbolo].pop(0)
                     
-                    # Evaluación 24 Horas
+                    # --- EVALUACIÓN 24 HORAS ---
                     if simbolo not in precios_24h: precios_24h[simbolo] = []
                     if len(precios_24h[simbolo]) >= MAX_ELEMENTOS_24H:
                         precio_viejo_24h = precios_24h[simbolo][0]
                         variacion_24h = ((precio_actual - precio_viejo_24h) / precio_viejo_24h) * 100
-                        if abs(variacion_24h) >= LIMITE_24H:
+                        
+                        # Lógica separada para 24 horas
+                        if variacion_24h >= LIMITE_SUBIDA_24H or variacion_24h <= -LIMITE_BAJADA_24H:
                             enviar_alerta_telegram(simbolo, "24 Horas", variacion_24h, precio_actual)
-                            precios_24h[simbolo].clear()  # Reinicio limpio de memoria
+                            precios_24h[simbolo].clear()  
+                            
                     precios_24h[simbolo].append(precio_actual)
                     if len(precios_24h[simbolo]) > MAX_ELEMENTOS_24H: precios_24h[simbolo].pop(0)
             print("⏳ Ciclo de escaneo completado.")
