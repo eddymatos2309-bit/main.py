@@ -11,8 +11,7 @@ client = Client('', '')  # Datos públicos de Binance
 TELEGRAM_TOKEN = '8968451696:AAF_QGs61ZQLDGVmjhLsP_2GoK1J3mDFcA8'
 TELEGRAM_CHAT_ID = '8737478796'
 
-# URL BASE CORREGIDA GLOBALMENTE (Evita errores de tipeo en las funciones)
-URL_BASE_TELEGRAM = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}"
+URL_BASE_TELEGRAM = f"https://telegram.org{TELEGRAM_TOKEN}"
 
 # 2. PARÁMETROS DEL RADAR
 LIMITE_SUBIDA_1H = 300.0  
@@ -26,11 +25,9 @@ precios_24h = {}
 ultimo_update_id = 0  
 
 def guardar_en_historial(token, temporalidad, variacion, precio):
-    """Guarda un registro de la alerta en un archivo de texto con fecha y hora"""
     ahora = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     tipo = "PUMP" if variacion > 0 else "DUMP"
     linea = f"[{ahora}] {tipo} | {token} | {temporalidad} | Variación: {variacion:.2f}% | Precio: ${precio:,.4f}\n"
-    
     try:
         with open("alertas_historial.txt", "a", encoding="utf-8") as f:
             f.write(linea)
@@ -40,7 +37,6 @@ def guardar_en_historial(token, temporalidad, variacion, precio):
 
 def enviar_alerta_telegram(token, temporalidad, variacion, precio_actual):
     url = f"{URL_BASE_TELEGRAM}/sendMessage"
-    
     if variacion > 0:
         direccion = "🚀 *EXPLOSIÓN AL ALZA (PUMP)*"
         icono = "🟢"
@@ -56,7 +52,6 @@ def enviar_alerta_telegram(token, temporalidad, variacion, precio_actual):
         f"📈 *Variación:* {icono} {variacion:.2f}%\n"
         f"💰 *Precio Actual:* ${precio_actual:,.4f}"
     )
-    
     payload = {"chat_id": TELEGRAM_CHAT_ID, "text": mensaje, "parse_mode": "Markdown"}
     try:
         response = requests.post(url, json=payload)
@@ -69,7 +64,6 @@ def enviar_alerta_telegram(token, temporalidad, variacion, precio_actual):
         print(f"Error enviando Telegram: {e}")
 
 def escuchar_comandos_telegram():
-    """Función secundaria que corre en segundo plano esperando tus mensajes"""
     global ultimo_update_id
     url_updates = f"{URL_BASE_TELEGRAM}/getUpdates"
     print("🤖 Bot de comandos interactivos activado...")
@@ -83,15 +77,17 @@ def escuchar_comandos_telegram():
                 for update in response["result"]:
                     ultimo_update_id = update["update_id"]
                     
-                    if "message" in update and "text" in update["message"]:
-                        texto = update["message"]["text"].strip().upper()
-                        chat_id_remitente = str(update["message"]["chat_id"])
+                    # CORRECCIÓN DE SEGURIDAD: Evita leer diccionarios inexistentes
+                    message_data = update.get("message")
+                    if message_data and "text" in message_data:
+                        texto = message_data["text"].strip().upper()
+                        chat_id_remitente = str(message_data["chat"].get("id"))
                         
-                        # Seguridad estricta: Solo responderte a ti
                         if chat_id_remitente == TELEGRAM_CHAT_ID:
                             if texto.startswith("/PRECIO"):
                                 partes = texto.split()
                                 if len(partes) > 1:
+                                    # CORRECCIÓN DE EXTRACCIÓN: Tomamos la segunda palabra limpia
                                     token_solicitado = partes[1]
                                     
                                     if not token_solicitado.endswith("USDT"):
@@ -108,7 +104,7 @@ def escuchar_comandos_telegram():
                                             f"💵 `${precio:,.4f}`\n"
                                             f"📊 *Var. Binance 24h:* {icono} {var_24h:.2f}%"
                                         )
-                                    except Exception as err:
+                                    except Exception:
                                         respuesta = f"❌ El token *{token_solicitado}* no fue encontrado en Binance Futuros."
                                 else:
                                     respuesta = "💡 Uso correcto: `/precio btc` o `/precio solusdt`"
