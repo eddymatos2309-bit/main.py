@@ -6,8 +6,8 @@ from binance.client import Client
 # 1. CONFIGURACIÓN DE CREDENCIALES (Cargadas de forma segura desde la nube)
 client = Client('', '')  # No requiere llaves para leer datos públicos
 
-TELEGRAM_TOKEN = os.environ.get('TELEGRAM_TOKEN')
-TELEGRAM_CHAT_ID = os.environ.get('TELEGRAM_CHAT_ID')
+TELEGRAM_TOKEN = os.environ.get('8968451696:AAF_QGs61ZQLDGVmjhLsP_2GoK1J3mDFcA8')
+TELEGRAM_CHAT_ID = os.environ.get('8737478796')
 
 # 2. PARÁMETROS DEL RADAR
 LIMITE_1H = 10.0   
