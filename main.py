@@ -185,11 +185,13 @@ def ejecutar_radar_dual():
                             precios_24h[simbolo].pop(0)
                     precios_24h[simbolo].append(precio_actual)
                     if len(precios_24h[simbolo]) > MAX_ELEMENTOS_24H: precios_24h[simbolo].pop(0)
-        print("⏳ Ciclo de escaneo completado con éxito.")
+                        
+            print("⏳ Ciclo de escaneo completado con éxito.")
         except Exception as e:
             print(f"⚠️ Error: {e}")
-            for _ in range(INTERVALO_BASE):
-                revisar_comandos_unificado()
-                time.sleep(1)
-                if name == "main":
-                    ejecutar_radar_dual()
+            
+        for _ in range(INTERVALO_BASE):
+           revisar_comandos_unificado()
+           time.sleep(1)
+if name == "main":
+   ejecutar_radar_dual()
