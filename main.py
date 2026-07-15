@@ -157,7 +157,7 @@ def revisar_comandos_unificado():
                                 for tkr, lista in alarmas_personalizadas.items():
                                     for alm in lista:
                                         total_alarmas += 1
-                                        texto_lista += f"• *{tkr}* en `${alm['precio_objetivo']:,.2f}`\n"
+                                        texto_lista += f"• *{tkr}* en `${alm['precio_objetivo']:,.6f}`\n"
                                 
                                 if total_alarmas == 0:
                                     respuesta = "📭 No tienes ninguna alarma fija programada en este momento."
