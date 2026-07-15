@@ -12,15 +12,15 @@ TELEGRAM_TOKEN = '8968451696:AAF_QGs61ZQLDGVmjhLsP_2GoK1J3mDFcA8'
 TELEGRAM_CHAT_ID = '8737478796'
 
 # 2. PARÁMETROS DEL RADAR
-LIMITE_SUBIDA_1H = 400.0  
-LIMITE_BAJADA_1H = 80.0   
-LIMITE_SUBIDA_24H = 600.0 
-LIMITE_BAJADA_24H = 85.0  
+LIMITE_SUBIDA_1H = 300.0  
+LIMITE_BAJADA_1H = 50.0   
+LIMITE_SUBIDA_24H = 500.0 
+LIMITE_BAJADA_24H = 70.0  
 INTERVALO_BASE = 60  
 
 precios_1h = {}   
 precios_24h = {}  
-ultimo_update_id = 0  # Para controlar los mensajes leídos de Telegram
+ultimo_update_id = 0  
 
 def guardar_en_historial(token, temporalidad, variacion, precio):
     """Guarda un registro de la alerta en un archivo de texto con fecha y hora"""
@@ -57,7 +57,6 @@ def enviar_alerta_telegram(token, temporalidad, variacion, precio_actual):
     payload = {"chat_id": TELEGRAM_CHAT_ID, "text": mensaje, "parse_mode": "Markdown"}
     try:
         requests.post(url, json=payload)
-        # Ejecutamos la función de guardado local
         guardar_en_historial(token, temporalidad, variacion, precio_actual)
     except Exception as e:
         print(f"Error enviando Telegram: {e}")
@@ -70,7 +69,6 @@ def escuchar_comandos_telegram():
     
     while True:
         try:
-            # Pedimos a Telegram los nuevos mensajes
             params = {"offset": ultimo_update_id + 1, "timeout": 10}
             response = requests.get(url_updates, params=params).json()
             
@@ -82,14 +80,14 @@ def escuchar_comandos_telegram():
                         texto = update["message"]["text"].strip().upper()
                         chat_id_remitente = str(update["message"]["chat_id"])
                         
-                        # Seguridad: Solo responderte a ti
+                        # Seguridad estricta: Solo responderte a ti
                         if chat_id_remitente == TELEGRAM_CHAT_ID:
-                            # Comando /precio
                             if texto.startswith("/PRECIO"):
                                 partes = texto.split()
                                 if len(partes) > 1:
+                                    # CORRECCIÓN AQUÍ: Tomamos el segundo elemento de la lista limpiamente
                                     token_solicitado = partes[1]
-                                    # Aseguramos que termine en USDT si no lo escribiste
+                                    
                                     if not token_solicitado.endswith("USDT"):
                                         token_solicitado += "USDT"
                                         
@@ -104,12 +102,12 @@ def escuchar_comandos_telegram():
                                             f"💵 `${precio:,.4f}`\n"
                                             f"📊 *Var. Binance 24h:* {icono} {var_24h:.2f}%"
                                         )
-                                    except:
-                                        respuesta = f"❌ El token *{token_solicitado}* no fue encontrado en Binance Futuros. Revisa la ortografía."
+                                    except Exception as err:
+                                        respuesta = f"❌ El token *{token_solicitado}* no fue encontrado en Binance Futuros."
                                 else:
                                     respuesta = "💡 Uso correcto: `/precio btc` o `/precio solusdt`"
                                     
-                                # Enviar respuesta del comando
+                                # Enviar respuesta del comando al chat
                                 url_send = f"https://telegram.org{TELEGRAM_TOKEN}/sendMessage"
                                 requests.post(url_send, json={"chat_id": TELEGRAM_CHAT_ID, "text": respuesta, "parse_mode": "Markdown"})
                                 
@@ -145,7 +143,8 @@ def ejecutar_radar_dual():
                     if simbolo not in precios_24h: precios_24h[simbolo] = []
                     if len(precios_24h[simbolo]) >= MAX_ELEMENTOS_24H:
                         precio_viejo_24h = precios_24h[simbolo][0]
-                        variacion_24h = ((precio_actual - precio_viejo_24h) / precio_24h[simbolo][0]) * 100
+                        # CORRECCIÓN AQUÍ: Se dividía por la lista completa, ahora divide por el precio viejo
+                        variacion_24h = ((precio_actual - precio_viejo_24h) / precio_viejo_24h) * 100
                         if variacion_24h >= LIMITE_SUBIDA_24H or variacion_24h <= -LIMITE_BAJADA_24H:
                             enviar_alerta_telegram(simbolo, "24 Horas", variacion_24h, precio_actual)
                             precios_24h[simbolo].clear()  
@@ -157,9 +156,6 @@ def ejecutar_radar_dual():
         time.sleep(INTERVALO_BASE)
 
 if __name__ == "__main__":
-    # Iniciar el hilo del Bot de Comandos de Telegram en segundo plano
     hilo_bot = threading.Thread(target=escuchar_comandos_telegram, daemon=True)
     hilo_bot.start()
-    
-    # Iniciar el Radar Principal de Binance en el hilo principal
     ejecutar_radar_dual()
