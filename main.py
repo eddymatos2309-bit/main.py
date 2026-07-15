@@ -8,7 +8,7 @@ client = Client('', '')  # Datos públicos de Binance
 TELEGRAM_TOKEN = '8968451696:AAF_QGs61ZQLDGVmjhLsP_2GoK1J3mDFcA8'
 TELEGRAM_CHAT_ID = '8737478796'
 
-# 2. PARÁMETROS DEL RADAR (Mantener valores bajos para la prueba)
+# 2. PARÁMETROS DEL RADAR (Valores bajos para la prueba)
 LIMITE_SUBIDA_1H = 0.01  
 LIMITE_BAJADA_1H = 0.01   
 LIMITE_SUBIDA_24H = 50.0 
@@ -46,16 +46,19 @@ def enviar_alerta_telegram(token, temporalidad, variacion, precio_actual):
         print(f"Error enviando Telegram: {e}")
 
 def revisar_comandos_unificado():
-    """Revisa los comandos de Telegram usando la URL directa dentro de la función"""
+    """Revisa los comandos de Telegram limpiando el offset de forma estricta"""
     global ultimo_update_id
-    # URL COMPLETA DIRECTA (Garantiza que Railway no use caché rota)
     url_updates = f"https://telegram.org{TELEGRAM_TOKEN}/getUpdates"
     
     try:
-        params = {"offset": ultimo_update_id + 1, "timeout": 0}
+        # Si es el primer ciclo, enviamos el offset en 0 para no causar fallos de lectura
+        params = {"timeout": 0}
+        if ultimo_update_id != 0:
+            params["offset"] = ultimo_update_id + 1
+            
         response_raw = requests.get(url_updates, params=params)
         
-        if response_raw.status_code == 200 and "application/json" in response_raw.headers.get("Content-Type", ""):
+        if response_raw.status_code == 200:
             response = response_raw.json()
             
             if "result" in response:
@@ -67,7 +70,6 @@ def revisar_comandos_unificado():
                         texto = message_data["text"].strip().upper()
                         chat_id_remitente = str(message_data["chat"].get("id"))
                         
-                        # Validamos que el mensaje sea tuyo
                         if chat_id_remitente == TELEGRAM_CHAT_ID:
                             if texto.startswith("/PRECIO"):
                                 partes = texto.split()
@@ -88,16 +90,19 @@ def revisar_comandos_unificado():
                                 else:
                                     respuesta = "💡 Uso correcto: `/precio btc`"
                                     
-                                # URL COMPLETA DIRECTA para responder
                                 url_send = f"https://telegram.org{TELEGRAM_TOKEN}/sendMessage"
                                 requests.post(url_send, json={"chat_id": TELEGRAM_CHAT_ID, "text": respuesta, "parse_mode": "Markdown"})
     except Exception as e:
-        pass
+        print(f"⚠️ Error al leer comandos: {e}")
 
 def ejecutar_radar_dual():
     print("🛸 Radar Dual Unificado con Comandos Activos en Railway...")
     MAX_ELEMENTOS_1H = 2        
     MAX_ELEMENTOS_24H = 1440     
+    
+    # Sincronización inicial con Telegram para limpiar mensajes antiguos antes de arrancar
+    print("⏳ Sincronizando bandeja de entrada con Telegram...")
+    revisar_comandos_unificado()
     
     while True:
         try:
