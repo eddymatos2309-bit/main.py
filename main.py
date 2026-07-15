@@ -3,13 +3,13 @@ import time
 import requests
 from binance.client import Client
 
-# 1. CONFIGURACIÓN DE CREDENCIALES (Cargadas de forma segura desde la nube)
+# 1. CONFIGURACIÓN DE CREDENCIALES
 client = Client('', '')  # No requiere llaves para leer datos públicos
 
 TELEGRAM_TOKEN = '8968451696:AAF_QGs61ZQLDGVmjhLsP_2GoK1J3mDFcA8'
 TELEGRAM_CHAT_ID = '8737478796'
 
-# 2. PARÁMETROS DEL RADAR
+# 2. PARÁMETROS DEL RADAR (Valores bajos para la prueba rápida)
 LIMITE_1H = 0.05   
 LIMITE_24H = 50.0  
 INTERVALO_BASE = 60  
@@ -18,7 +18,8 @@ precios_1h = {}
 precios_24h = {}  
 
 def enviar_alerta_telegram(token, temporalidad, variacion, precio_actual):
-    url = f"https://telegram.org{TELEGRAM_TOKEN}/sendMessage"
+    # URL Oficial de Telegram Corregida
+    url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
     
     if variacion > 0:
         direccion = "🚀 *EXPLOSIÓN AL ALZA (PUMP)*"
@@ -38,12 +39,16 @@ def enviar_alerta_telegram(token, temporalidad, variacion, precio_actual):
     
     payload = {"chat_id": TELEGRAM_CHAT_ID, "text": mensaje, "parse_mode": "Markdown"}
     try:
-        requests.post(url, json=payload)
+        response = requests.post(url, json=payload)
+        if response.status_code == 200:
+            print(f"✅ Mensaje enviado para {token}")
+        else:
+            print(f"❌ Error de Telegram: {response.text}")
     except Exception as e:
         print(f"Error enviando Telegram: {e}")
 
 def ejecutar_radar_dual():
-    print("🛸 Radar Dual de Futuros iniciado en Render...")
+    print("🛸 Radar Dual de Futuros iniciado en Railway...")
     MAX_ELEMENTOS_1H = 2        
     MAX_ELEMENTOS_24H = 1440     
     
@@ -61,8 +66,8 @@ def ejecutar_radar_dual():
                         precio_viejo_1h = precios_1h[simbolo][0]
                         variacion_1h = ((precio_actual - precio_viejo_1h) / precio_viejo_1h) * 100
                         if abs(variacion_1h) >= LIMITE_1H:
-                            enviar_alerta_telegram(simbolo, "1 Hora", variacion_1h, precio_actual)
-                            precios_1h[simbolo] = [] 
+                            enviar_alerta_telegram(simbolo, "1 Hora (Prueba)", variacion_1h, precio_actual)
+                            precios_1h[simbolo].clear()  # Reinicio limpio de memoria
                     precios_1h[simbolo].append(precio_actual)
                     if len(precios_1h[simbolo]) > MAX_ELEMENTOS_1H: precios_1h[simbolo].pop(0)
                     
@@ -73,7 +78,7 @@ def ejecutar_radar_dual():
                         variacion_24h = ((precio_actual - precio_viejo_24h) / precio_viejo_24h) * 100
                         if abs(variacion_24h) >= LIMITE_24H:
                             enviar_alerta_telegram(simbolo, "24 Horas", variacion_24h, precio_actual)
-                            precios_24h[simbolo] = []
+                            precios_24h[simbolo].clear()  # Reinicio limpio de memoria
                     precios_24h[simbolo].append(precio_actual)
                     if len(precios_24h[simbolo]) > MAX_ELEMENTOS_24H: precios_24h[simbolo].pop(0)
             print("⏳ Ciclo de escaneo completado.")
