@@ -35,8 +35,8 @@ def enviar_alerta_telegram(token, temporalidad, variacion, precio_actual):
         f"🔔 *Activo:* #{token}\n"
         f"⏱️ *Temporalidad:* {temporalidad}\n"
         f"📊 *Movimiento:* {direccion}\n"
-        f"📈 *Variación:* {icono} {variacion:.2f}%\n"
-        f"💰 *Precio Actual:* ${precio_actual:,.4f}"
+        f"📈 *Variación:* {icono} {variacion:.6f}%\n"
+        f"💰 *Precio Actual:* ${precio_actual:,.6f}"
     )
     payload = {"chat_id": TELEGRAM_CHAT_ID, "text": mensaje, "parse_mode": "Markdown"}
     try: requests.post(url, json=payload)
@@ -65,8 +65,8 @@ def revisar_alarmas_fijas(simbolo, precio_actual):
                 mensaje = (
                     f"🎯 *¡ALARMA DE PRECIO ALCANZADA!* 🎯\n\n"
                     f"🪙 *Activo:* #{simbolo}\n"
-                    f"📌 *Precio Objetivo:* ${precio_obj:,.2f}\n"
-                    f"💵 *Precio Actual:* ${precio_actual:,.2f}\n"
+                    f"📌 *Precio Objetivo:* ${precio_obj:,.6f}\n"
+                    f"💵 *Precio Actual:* ${precio_actual:,.6f}\n"
                     f"⚡ *Condición:* {direccion_flecha}"
                 )
                 try: requests.post(url, json={"chat_id": TELEGRAM_CHAT_ID, "text": mensaje, "parse_mode": "Markdown"})
@@ -106,7 +106,7 @@ def revisar_comandos_unificado():
                                         precio = float(ticker['lastPrice'])
                                         var_24h = float(ticker['priceChangePercent'])
                                         icono = "🟢" if var_24h >= 0 else "🔴"
-                                        respuesta = f"💰 *Precio de {token_solicitado}:*\n\n💵 `${precio:,.4f}`\n📊 *Var. Binance 24h:* {icono} {var_24h:.2f}%"
+                                        respuesta = f"💰 *Precio de {token_solicitado}:*\n\n💵 `${precio:,.4f}`\n📊 *Var. Binance 24h:* {icono} {var_24h:.6f}%"
                                     except: respuesta = f"❌ Token *{token_solicitado}* no encontrado."
                                 else: respuesta = "💡 Uso correcto: `/precio btc`"
                                 
@@ -137,8 +137,8 @@ def revisar_comandos_unificado():
                                         respuesta = (
                                             f"✅ *Alarma Programada*\n\n"
                                             f"🪙 *Activo:* #{token_solicitado}\n"
-                                            f"🎯 *Avisar en:* ${precio_objetivo:,.8f}\n"
-                                            f"💵 *Precio Actual:* ${precio_actual:,.8f}"
+                                            f"🎯 *Avisar en:* ${precio_objetivo:,.6f}\n"
+                                            f"💵 *Precio Actual:* ${precio_actual:,.6f}"
                                         )
                                     except:
                                         respuesta = "❌ Error al programar la alarma. Verifica el token y el precio."
