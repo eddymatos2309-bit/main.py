@@ -53,7 +53,8 @@ def enviar_alerta_telegram(token, temporalidad, variacion, precio_actual):
         f"💰 *Precio Actual:* ${precio_actual:,.4f}"
     )
     payload = {"chat_id": TELEGRAM_CHAT_ID, "text": mensaje, "parse_mode": "Markdown"}
-    try:
+    try
+
         response = requests.post(url, json=payload)
         if response.status_code == 200:
             print(f"✅ Mensaje enviado para {token}")
