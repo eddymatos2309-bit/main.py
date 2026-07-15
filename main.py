@@ -137,8 +137,8 @@ def revisar_comandos_unificado():
                                         respuesta = (
                                             f"✅ *Alarma Programada*\n\n"
                                             f"🪙 *Activo:* #{token_solicitado}\n"
-                                            f"🎯 *Avisar en:* ${precio_objetivo:,.2f}\n"
-                                            f"💵 *Precio Actual:* ${precio_actual:,.2f}"
+                                            f"🎯 *Avisar en:* ${precio_objetivo:,.8f}\n"
+                                            f"💵 *Precio Actual:* ${precio_actual:,.8f}"
                                         )
                                     except:
                                         respuesta = "❌ Error al programar la alarma. Verifica el token y el precio."
