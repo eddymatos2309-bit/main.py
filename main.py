@@ -99,7 +99,7 @@ def ejecutar_radar_dual():
     print("🛸 Radar Dual de Futuros iniciado en modo de PRODUCCIÓN...")
     
     # Pruebas rápidas alternas: Pon esto en 2 y 5 si quieres ver alertas sin esperar la hora completa
-    MAX_ELEMENTOS_1H = 60        
+    MAX_ELEMENTOS_1H = 2        
     MAX_ELEMENTOS_24H = 1440     
     
     print("⏳ Sincronizando bandeja de entrada con Telegram...")
