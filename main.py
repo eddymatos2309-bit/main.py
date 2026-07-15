@@ -50,7 +50,8 @@ def enviar_alerta_telegram(token, temporalidad, variacion, precio_actual):
 def revisar_comandos_unificado():
     """Revisa los comandos de Telegram usando la estructura de URL inmutable"""
     global ultimo_update_id
-    url_updates = f"https://telegram.org{TELEGRAM_TOKEN}/getUpdates"
+    url_updates = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/getUpdates"
+
     
     try:
         params = {"timeout": 0}
@@ -91,7 +92,7 @@ def revisar_comandos_unificado():
                                 else:
                                     respuesta = "💡 Uso correcto: `/precio btc`"
                                     
-                                url_send = f"https://telegram.org{TELEGRAM_TOKEN}/sendMessage"
+                                url_send = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
                                 requests.post(url_send, json={"chat_id": TELEGRAM_CHAT_ID, "text": respuesta, "parse_mode": "Markdown"})
     except Exception as e:
         pass
