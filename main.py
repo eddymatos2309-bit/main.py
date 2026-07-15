@@ -22,7 +22,7 @@ precios_24h = {}
 ultimo_update_id = 0  
 
 def enviar_alerta_telegram(token, temporalidad, variacion, precio_actual):
-    url = f"https://telegram.org{TELEGRAM_TOKEN}/sendMessage"
+    url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
     
     if variacion > 0:
         direccion = "🚀 *EXPLOSIÓN AL ALZA (PUMP)*"
