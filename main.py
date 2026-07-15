@@ -10,8 +10,8 @@ TELEGRAM_TOKEN = '8968451696:AAF_QGs61ZQLDGVmjhLsP_2GoK1J3mDFcA8'
 TELEGRAM_CHAT_ID = '8737478796'
 
 # 2. PARÁMETROS DEL RADAR PERSONALIZADOS (Ajusta estos valores a tu gusto)
-LIMITE_SUBIDA_1H = 00.06  # Alerta si sube más de +300% en 1 hora
-LIMITE_BAJADA_1H = 50.0   # Alerta si cae más de -50% en 1 hora
+LIMITE_SUBIDA_1H = 00.05  # Alerta si sube más de +300% en 1 hora
+LIMITE_BAJADA_1H = 1.0   # Alerta si cae más de -50% en 1 hora
 
 LIMITE_SUBIDA_24H = 500.0 # Alerta si sube más de +500% en 24 horas
 LIMITE_BAJADA_24H = 70.0  # Alerta si cae más de -70% en 24 horas
