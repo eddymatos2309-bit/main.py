@@ -11,6 +11,9 @@ client = Client('', '')  # Datos públicos de Binance
 TELEGRAM_TOKEN = '8968451696:AAF_QGs61ZQLDGVmjhLsP_2GoK1J3mDFcA8'
 TELEGRAM_CHAT_ID = '8737478796'
 
+# URL BASE CORREGIDA GLOBALMENTE (Evita errores de tipeo en las funciones)
+URL_BASE_TELEGRAM = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}"
+
 # 2. PARÁMETROS DEL RADAR
 LIMITE_SUBIDA_1H = 300.0  
 LIMITE_BAJADA_1H = 50.0   
@@ -36,8 +39,7 @@ def guardar_en_historial(token, temporalidad, variacion, precio):
         print(f"Error al escribir en historial: {e}")
 
 def enviar_alerta_telegram(token, temporalidad, variacion, precio_actual):
-    # DIRECCIÓN CORREGIDA
-    url = f"https://telegram.org{TELEGRAM_TOKEN}/sendMessage"
+    url = f"{URL_BASE_TELEGRAM}/sendMessage"
     
     if variacion > 0:
         direccion = "🚀 *EXPLOSIÓN AL ALZA (PUMP)*"
@@ -69,8 +71,7 @@ def enviar_alerta_telegram(token, temporalidad, variacion, precio_actual):
 def escuchar_comandos_telegram():
     """Función secundaria que corre en segundo plano esperando tus mensajes"""
     global ultimo_update_id
-    # DIRECCIÓN CORREGIDA DE MANERA ESTRICTA AQUÍ
-    url_updates = f"https://telegram.org{TELEGRAM_TOKEN}/getUpdates"
+    url_updates = f"{URL_BASE_TELEGRAM}/getUpdates"
     print("🤖 Bot de comandos interactivos activado...")
     
     while True:
@@ -112,8 +113,7 @@ def escuchar_comandos_telegram():
                                 else:
                                     respuesta = "💡 Uso correcto: `/precio btc` o `/precio solusdt`"
                                     
-                                # DIRECCIÓN CORREGIDA PARA RESPONDER COMANDOS
-                                url_send = f"https://telegram.org{TELEGRAM_TOKEN}/sendMessage"
+                                url_send = f"{URL_BASE_TELEGRAM}/sendMessage"
                                 requests.post(url_send, json={"chat_id": TELEGRAM_CHAT_ID, "text": respuesta, "parse_mode": "Markdown"})
                                 
         except Exception as e:
