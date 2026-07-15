@@ -34,7 +34,6 @@ def guardar_en_historial(token, temporalidad, variacion, precio):
         print(f"Error al escribir en historial: {e}")
 
 def enviar_alerta_telegram(token, temporalidad, variacion, precio_actual):
-    # URL FIJA DE ENVÍO DE ALERTAS
     url = "https://telegram.org"
     
     if variacion > 0:
@@ -63,50 +62,57 @@ def enviar_alerta_telegram(token, temporalidad, variacion, precio_actual):
 
 def escuchar_comandos_telegram():
     global ultimo_update_id
-    # URL FIJA PARA ACTUALIZACIONES (GET UPDATES)
     url_updates = "https://telegram.org"
     print("🤖 Bot de comandos interactivos activado...")
     
     while True:
         try:
-            params = {"offset": ultimo_update_id + 1, "timeout": 10}
-            response = requests.get(url_updates, params=params).json()
+            # OPTIMIZACIÓN: timeout=30 activa el Long Polling oficial de Telegram
+            params = {"offset": ultimo_update_id + 1, "timeout": 30}
+            response_raw = requests.get(url_updates, params=params)
             
-            if "result" in response:
-                for update in response["result"]:
-                    ultimo_update_id = update["update_id"]
-                    
-                    message_data = update.get("message")
-                    if message_data and "text" in message_data:
-                        texto = message_data["text"].strip().upper()
-                        chat_id_remitente = str(message_data["chat"].get("id"))
+            # Verificación de seguridad: Solo procesar si el servidor respondió correctamente (OK 200)
+            if response_raw.status_code == 200:
+                response = response_raw.json()
+                
+                if "result" in response:
+                    for update in response["result"]:
+                        ultimo_update_id = update["update_id"]
                         
-                        if chat_id_remitente == TELEGRAM_CHAT_ID:
-                            if texto.startswith("/PRECIO"):
-                                partes = texto.split()
-                                if len(partes) > 1:
-                                    token_solicitado = partes[1]
-                                    if not token_solicitado.endswith("USDT"):
-                                        token_solicitado += "USDT"
+                        message_data = update.get("message")
+                        if message_data and "text" in message_data:
+                            texto = message_data["text"].strip().upper()
+                            chat_id_remitente = str(message_data["chat"].get("id"))
+                            
+                            if chat_id_remitente == TELEGRAM_CHAT_ID:
+                                if texto.startswith("/PRECIO"):
+                                    partes = texto.split()
+                                    if len(partes) > 1:
+                                        token_solicitado = partes[1]
+                                        if not token_solicitado.endswith("USDT"):
+                                            token_solicitado += "USDT"
+                                            
+                                        try:
+                                            ticker = client.futures_ticker(symbol=token_solicitado)
+                                            precio = float(ticker['lastPrice'])
+                                            var_24h = float(ticker['priceChangePercent'])
+                                            icono = "🟢" if var_24h >= 0 else "🔴"
+                                            respuesta = f"💰 *Precio de {token_solicitado}:*\n\n💵 `${precio:,.4f}`\n📊 *Var. Binance 24h:* {icono} {var_24h:.2f}%"
+                                        except Exception:
+                                            respuesta = f"❌ El token *{token_solicitado}* no fue encontrado en Binance Futuros."
+                                    else:
+                                        respuesta = "💡 Uso correcto: `/precio btc`"
                                         
-                                    try:
-                                        ticker = client.futures_ticker(symbol=token_solicitado)
-                                        precio = float(ticker['lastPrice'])
-                                        var_24h = float(ticker['priceChangePercent'])
-                                        icono = "🟢" if var_24h >= 0 else "🔴"
-                                        respuesta = f"💰 *Precio de {token_solicitado}:*\n\n💵 `${precio:,.4f}`\n📊 *Var. Binance 24h:* {icono} {var_24h:.2f}%"
-                                    except Exception:
-                                        respuesta = f"❌ El token *{token_solicitado}* no fue encontrado en Binance Futuros."
-                                else:
-                                    respuesta = "💡 Uso correcto: `/precio btc`"
-                                    
-                                # URL FIJA PARA ENVIAR RESPUESTA DE COMANDO
-                                url_send = "https://telegram.org"
-                                requests.post(url_send, json={"chat_id": TELEGRAM_CHAT_ID, "text": respuesta, "parse_mode": "Markdown"})
+                                    url_send = "https://telegram.org"
+                                    requests.post(url_send, json={"chat_id": TELEGRAM_CHAT_ID, "text": respuesta, "parse_mode": "Markdown"})
+            else:
+                # Si el servidor responde con error (ej. Bloqueo 429), descansamos 15 segundos antes de reintentar
+                print(f"⚠️ Telegram respondió con código {response_raw.status_code}. Esperando liberación...")
+                time.sleep(15)
                                 
         except Exception as e:
             print(f"Error en bot de comandos: {e}")
-        time.sleep(1)
+            time.sleep(5)  # Pausa de seguridad ante caídas de red bruscas
 
 def ejecutar_radar_dual():
     print("🛸 Radar Dual de Futuros iniciado en Railway...")
