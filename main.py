@@ -20,7 +20,8 @@ precios_24h = {}
 ultimo_update_id = 0  
 
 def enviar_alerta_telegram(token, temporalidad, variacion, precio_actual):
-    url = f"https://telegram.org{TELEGRAM_TOKEN}/sendMessage"
+    # LA ESTRUCTURA GANADORA: Usada estrictamente aquí
+    url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
     
     if variacion > 0:
         direccion = "🚀 *EXPLOSIÓN AL ALZA (PUMP)*"
@@ -46,12 +47,13 @@ def enviar_alerta_telegram(token, temporalidad, variacion, precio_actual):
         print(f"Error enviando Telegram: {e}")
 
 def revisar_comandos_unificado():
-    """Revisa los comandos de Telegram limpiando el offset de forma estricta"""
+    """Revisa los comandos de Telegram usando la misma base estructural de URL"""
     global ultimo_update_id
-    url_updates = f"https://telegram.org{TELEGRAM_TOKEN}/getUpdates"
+    
+    # Aplicamos la misma sintaxis que confirmaste que funciona
+    url_updates = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/getUpdates"
     
     try:
-        # Si es el primer ciclo, enviamos el offset en 0 para no causar fallos de lectura
         params = {"timeout": 0}
         if ultimo_update_id != 0:
             params["offset"] = ultimo_update_id + 1
@@ -90,17 +92,17 @@ def revisar_comandos_unificado():
                                 else:
                                     respuesta = "💡 Uso correcto: `/precio btc`"
                                     
-                                url_send = f"https://telegram.org{TELEGRAM_TOKEN}/sendMessage"
+                                # APLICAMOS LA SINTAXIS GANADORA PARA RESPONDER EL COMANDO
+                                url_send = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
                                 requests.post(url_send, json={"chat_id": TELEGRAM_CHAT_ID, "text": respuesta, "parse_mode": "Markdown"})
     except Exception as e:
         print(f"⚠️ Error al leer comandos: {e}")
 
 def ejecutar_radar_dual():
-    print("🛸 Radar Dual Unificado con Comandos Activos en Railway...")
+    print("🛸 Radar Dual Unificado Iniciado con URLs Seguras...")
     MAX_ELEMENTOS_1H = 2        
     MAX_ELEMENTOS_24H = 1440     
     
-    # Sincronización inicial con Telegram para limpiar mensajes antiguos antes de arrancar
     print("⏳ Sincronizando bandeja de entrada con Telegram...")
     revisar_comandos_unificado()
     
@@ -137,7 +139,7 @@ def ejecutar_radar_dual():
         except Exception as e:
             print(f"⚠️ Error: {e}")
             
-        # El script revisa Telegram 60 veces (una por segundo) antes de volver a escanear Binance
+        # El script revisa tu chat segundo a segundo para responder al instante
         for _ in range(INTERVALO_BASE):
             revisar_comandos_unificado()
             time.sleep(1)
