@@ -10,7 +10,7 @@ TELEGRAM_TOKEN = os.environ.get('8968451696:AAF_QGs61ZQLDGVmjhLsP_2GoK1J3mDFcA8'
 TELEGRAM_CHAT_ID = os.environ.get('8737478796')
 
 # 2. PARÁMETROS DEL RADAR
-LIMITE_1H = 10.0   
+LIMITE_1H = 0.5   
 LIMITE_24H = 50.0  
 INTERVALO_BASE = 60  
 
@@ -44,7 +44,7 @@ def enviar_alerta_telegram(token, temporalidad, variacion, precio_actual):
 
 def ejecutar_radar_dual():
     print("🛸 Radar Dual de Futuros iniciado en Render...")
-    MAX_ELEMENTOS_1H = 60        
+    MAX_ELEMENTOS_1H = 2        
     MAX_ELEMENTOS_24H = 1440     
     
     while True:
