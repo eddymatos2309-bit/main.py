@@ -53,8 +53,7 @@ def enviar_alerta_telegram(token, temporalidad, variacion, precio_actual):
         f"💰 *Precio Actual:* ${precio_actual:,.4f}"
     )
     payload = {"chat_id": TELEGRAM_CHAT_ID, "text": mensaje, "parse_mode": "Markdown"}
-    try
-
+    try:
         response = requests.post(url, json=payload)
         if response.status_code == 200:
             print(f"✅ Mensaje enviado para {token}")
@@ -78,7 +77,6 @@ def escuchar_comandos_telegram():
                 for update in response["result"]:
                     ultimo_update_id = update["update_id"]
                     
-                    # CORRECCIÓN DE SEGURIDAD: Evita leer diccionarios inexistentes
                     message_data = update.get("message")
                     if message_data and "text" in message_data:
                         texto = message_data["text"].strip().upper()
@@ -88,7 +86,7 @@ def escuchar_comandos_telegram():
                             if texto.startswith("/PRECIO"):
                                 partes = texto.split()
                                 if len(partes) > 1:
-                                    # CORRECCIÓN DE EXTRACCIÓN: Tomamos la segunda palabra limpia
+                                    # Extrae el token de forma correcta tomando la segunda palabra
                                     token_solicitado = partes[1]
                                     
                                     if not token_solicitado.endswith("USDT"):
