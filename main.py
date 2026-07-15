@@ -19,12 +19,14 @@ precios_1h = {}
 precios_24h = {}  
 ultimo_update_id = 0  
 
-# NUEVA VARIABLE: Diccionario para guardar tus alarmas fijas
-# Formato interno: {'BTCUSDT': [{'precio_objetivo': 66000.0, 'precio_inicial': 62000.0}]}
+# Diccionario para guardar tus alarmas fijas bajo demanda
 alarmas_personalizadas = {}
 
 def enviar_alerta_telegram(token, temporalidad, variacion, precio_actual):
-    url = f"https://telegram.org{TELEGRAM_TOKEN}/sendMessage"
+    # URL oficial corregida
+   
+    url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
+    
     icono = "🟢" if variacion > 0 else "🔴"
     direccion = "🚀 *EXPLOSIÓN AL ALZA (PUMP)*" if variacion > 0 else "📉 *COLAPSO A LA BAJA (DUMP)*"
     
@@ -43,13 +45,11 @@ def enviar_alerta_telegram(token, temporalidad, variacion, precio_actual):
 def revisar_alarmas_fijas(simbolo, precio_actual):
     """Revisa si el precio cruzó alguna de las alertas programadas por el usuario"""
     if simbolo in alarmas_personalizadas:
-        # Recorremos al revés para poder borrar elementos de la lista mientras iteramos
         for i in range(len(alarmas_personalizadas[simbolo]) - 1, -1, -1):
             alarma = alarmas_personalizadas[simbolo][i]
             precio_obj = alarma['precio_objetivo']
             precio_ini = alarma['precio_inicial']
             
-            # Detectar si venía de abajo y subió, o si venía de arriba y cayó
             disparada = False
             if precio_ini <= precio_obj and precio_actual >= precio_obj:
                 disparada = True
@@ -59,8 +59,9 @@ def revisar_alarmas_fijas(simbolo, precio_actual):
                 direccion_flecha = "📉 ¡Cruzó a la baja!"
                 
             if disparada:
-                # Enviar notificación inmediata de precio alcanzado
-                url = f"https://telegram.org{TELEGRAM_TOKEN}/sendMessage"
+                # URL oficial corregida
+                
+                url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
                 mensaje = (
                     f"🎯 *¡ALARMA DE PRECIO ALCANZADA!* 🎯\n\n"
                     f"🪙 *Activo:* #{simbolo}\n"
@@ -71,12 +72,12 @@ def revisar_alarmas_fijas(simbolo, precio_actual):
                 try: requests.post(url, json={"chat_id": TELEGRAM_CHAT_ID, "text": mensaje, "parse_mode": "Markdown"})
                 except: pass
                 
-                # Borramos la alarma para que no vuelva a sonar infinitamente
                 alarmas_personalizadas[simbolo].pop(i)
 
 def revisar_comandos_unificado():
     global ultimo_update_id
-    url_updates = f"https://telegram.org{TELEGRAM_TOKEN}/getUpdates"
+    # URL oficial corregida
+    url_updates = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/getUpdates"
     
     try:
         params = {"timeout": 0}
@@ -109,9 +110,11 @@ def revisar_comandos_unificado():
                                     except: respuesta = f"❌ Token *{token_solicitado}* no encontrado."
                                 else: respuesta = "💡 Uso correcto: `/precio btc`"
                                 
-                                requests.post(f"{URL_BASE_TELEGRAM}/sendMessage" if 'URL_BASE_TELEGRAM' in locals() else f"https://telegram.org{TELEGRAM_TOKEN}/sendMessage", json={"chat_id": TELEGRAM_CHAT_ID, "text": respuesta, "parse_mode": "Markdown"})
+                                # URL oficial corregida
+                                url_send = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
+                                requests.post(url_send, json={"chat_id": TELEGRAM_CHAT_ID, "text": respuesta, "parse_mode": "Markdown"})
                             
-                            # --- NUEVO COMANDO 2: /ALERTA (Ej: /alerta btc 66000) ---
+                            # --- COMANDO 2: /ALERTA ---
                             elif texto.startswith("/ALERTA"):
                                 partes = texto.split()
                                 if len(partes) > 2:
@@ -120,7 +123,6 @@ def revisar_comandos_unificado():
                                     
                                     try:
                                         precio_objetivo = float(partes[2].replace(",", ""))
-                                        # Consultamos el precio actual para saber si la alarma va hacia arriba o hacia abajo
                                         ticker = client.futures_ticker(symbol=token_solicitado)
                                         precio_actual = float(ticker['lastPrice'])
                                         
@@ -139,17 +141,40 @@ def revisar_comandos_unificado():
                                             f"💵 *Precio Actual:* ${precio_actual:,.2f}"
                                         )
                                     except:
-                                        respuesta = "❌ Error al programar la alarma. Verifica el nombre del token y que el precio sea un número."
+                                        respuesta = "❌ Error al programar la alarma. Verifica el token y el precio."
                                 else:
-                                    respuesta = "💡 Uso correcto: `/alerta btc 66000` o `/alerta sol 145.50`"
+                                    respuesta = "💡 Uso correcto: `/alerta btc 66000`"
                                 
-                                requests.post(f"https://telegram.org{TELEGRAM_TOKEN}/sendMessage", json={"chat_id": TELEGRAM_CHAT_ID, "text": respuesta, "parse_mode": "Markdown"})
+                                # URL oficial corregida
+                                url_send = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
+                                requests.post(url_send, json={"chat_id": TELEGRAM_CHAT_ID, "text": respuesta, "parse_mode": "Markdown"})
+                            
+                            # --- NUEVO COMANDO 3: /LISTA ---
+                            elif texto == "/LISTA":
+                                total_alarmas = 0
+                                texto_lista = "📌 *Alarmas de precio pendientes:*\n\n"
+                                
+                                for tkr, lista in alarmas_personalizadas.items():
+                                    for alm in lista:
+                                        total_alarmas += 1
+                                        texto_lista += f"• *{tkr}* en `${alm['precio_objetivo']:,.2f}`\n"
+                                
+                                if total_alarmas == 0:
+                                    respuesta = "📭 No tienes ninguna alarma fija programada en este momento."
+                                else:
+                                    respuesta = texto_lista
+                                    
+                                # URL oficial corregida
+                                url_send = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
+                                requests.post(url_send, json={"chat_id": TELEGRAM_CHAT_ID, "text": respuesta, "parse_mode": "Markdown"})
     except: pass
 
 def ejecutar_radar_dual():
     print("🛸 Radar Dual de Futuros con Alertas Fijas Iniciado...")
     MAX_ELEMENTOS_1H = 60        
     MAX_ELEMENTOS_24H = 1440     
+    
+    print("⏳ Sincronizando bandeja de entrada con Telegram...")
     revisar_comandos_unificado()
     
     while True:
@@ -160,38 +185,48 @@ def ejecutar_radar_dual():
                 if simbolo.endswith('USDT'):
                     precio_actual = float(ticker['lastPrice'])
                     
-                    # NUEVA COMPROBACIÓN: Evaluamos si el precio tocó alguna de tus alarmas guardadas
                     revisar_alarmas_fijas(simbolo, precio_actual)
                     
                     # --- EVALUACIÓN 1 HORA ---
-                    if simbolo not in precios_1h: precios_1h[simbolo] = []
+                    if simbolo not in precios_1h: 
+                        precios_1h[simbolo] = []
+                    
                     if len(precios_1h[simbolo]) >= MAX_ELEMENTOS_1H:
                         precio_viejo_1h = precios_1h[simbolo][0]
                         variacion_1h = ((precio_actual - precio_viejo_1h) / precio_viejo_1h) * 100
+                        
                         if variacion_1h >= LIMITE_SUBIDA_1H or variacion_1h <= -LIMITE_BAJADA_1H:
                             enviar_alerta_telegram(simbolo, "1 Hora", variacion_1h, precio_actual)
-                            precios_1h[simbolo].pop(0)  
+                            precios_1h[simbolo].pop(0)
+                            
                     precios_1h[simbolo].append(precio_actual)
-                    if len(precios_1h[simbolo]) > MAX_ELEMENTOS_1H: precios_1h[simbolo].pop(0)
-                    
+                    if len(precios_1h[simbolo]) > MAX_ELEMENTOS_1H: 
+                        precios_1h[simbolo].pop(0)
+                        
                     # --- EVALUACIÓN 24 HORAS ---
-                    if simbolo not in precios_24h: precios_24h[simbolo] = []
+                    if simbolo not in precios_24h: 
+                        precios_24h[simbolo] = []
+                        
                     if len(precios_24h[simbolo]) >= MAX_ELEMENTOS_24H:
                         precio_viejo_24h = precios_24h[simbolo][0]
                         variacion_24h = ((precio_actual - precio_viejo_24h) / precio_viejo_24h) * 100
-                        if variacion_24h >= LIMITE_SUBIDA_24H
-                        or variacion_24h <= -LIMITE_BAJADA_24H:
+                        
+                        if variacion_24h >= LIMITE_SUBIDA_24H or variacion_24h <= -LIMITE_BAJADA_24H:
                             enviar_alerta_telegram(simbolo, "24 Horas", variacion_24h, precio_actual)
                             precios_24h[simbolo].pop(0)
+                            
                     precios_24h[simbolo].append(precio_actual)
-                    if len(precios_24h[simbolo]) > MAX_ELEMENTOS_24H: precios_24h[simbolo].pop(0)
+                    if len(precios_24h[simbolo]) > MAX_ELEMENTOS_24H: 
+                        precios_24h[simbolo].pop(0)
                         
             print("⏳ Ciclo de escaneo completado con éxito.")
+            
         except Exception as e:
-            print(f"⚠️ Error: {e}")
+            print(f"⚠️ Error en ciclo Binance: {e}")
             
         for _ in range(INTERVALO_BASE):
-           revisar_comandos_unificado()
-           time.sleep(1)
-if name == "main":
-   ejecutar_radar_dual()
+            revisar_comandos_unificado()
+            time.sleep(1)
+
+if __name__ == "__main__":
+    ejecutar_radar_dual()
