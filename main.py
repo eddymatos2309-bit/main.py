@@ -8,19 +8,19 @@ client = Client('', '')  # Datos públicos de Binance
 TELEGRAM_TOKEN = '8968451696:AAF_QGs61ZQLDGVmjhLsP_2GoK1J3mDFcA8'
 TELEGRAM_CHAT_ID = '8737478796'
 
-# 2. PARÁMETROS DEL RADAR (Valores de prueba ultra bajos)
-LIMITE_SUBIDA_1H = 50.0  
-LIMITE_BAJADA_1H = 50.01   
+# 2. PARÁMETROS DEL RADAR (Mantener valores bajos para la prueba)
+LIMITE_SUBIDA_1H = 0.01  
+LIMITE_BAJADA_1H = 0.01   
 LIMITE_SUBIDA_24H = 50.0 
 LIMITE_BAJADA_24H = 50.0  
 INTERVALO_BASE = 60  
 
 precios_1h = {}   
 precios_24h = {}  
+ultimo_update_id = 0  
 
 def enviar_alerta_telegram(token, temporalidad, variacion, precio_actual):
-    # URL COMPLETA DIRECTA (El método que confirmaste que funciona)
-    url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
+    url = f"https://telegram.org{TELEGRAM_TOKEN}/sendMessage"
     
     if variacion > 0:
         direccion = "🚀 *EXPLOSIÓN AL ALZA (PUMP)*"
@@ -45,9 +45,58 @@ def enviar_alerta_telegram(token, temporalidad, variacion, precio_actual):
     except Exception as e:
         print(f"Error enviando Telegram: {e}")
 
+def revisar_comandos_unificado():
+    """Revisa los comandos de Telegram usando la URL directa dentro de la función"""
+    global ultimo_update_id
+    # URL COMPLETA DIRECTA (Garantiza que Railway no use caché rota)
+    url_updates = f"https://telegram.org{TELEGRAM_TOKEN}/getUpdates"
+    
+    try:
+        params = {"offset": ultimo_update_id + 1, "timeout": 0}
+        response_raw = requests.get(url_updates, params=params)
+        
+        if response_raw.status_code == 200 and "application/json" in response_raw.headers.get("Content-Type", ""):
+            response = response_raw.json()
+            
+            if "result" in response:
+                for update in response["result"]:
+                    ultimo_update_id = update["update_id"]
+                    
+                    message_data = update.get("message")
+                    if message_data and "text" in message_data:
+                        texto = message_data["text"].strip().upper()
+                        chat_id_remitente = str(message_data["chat"].get("id"))
+                        
+                        # Validamos que el mensaje sea tuyo
+                        if chat_id_remitente == TELEGRAM_CHAT_ID:
+                            if texto.startswith("/PRECIO"):
+                                partes = texto.split()
+                                if len(partes) > 1:
+                                    token_solicitado = partes[1]
+                                    
+                                    if not token_solicitado.endswith("USDT"):
+                                        token_solicitado += "USDT"
+                                        
+                                    try:
+                                        ticker = client.futures_ticker(symbol=token_solicitado)
+                                        precio = float(ticker['lastPrice'])
+                                        var_24h = float(ticker['priceChangePercent'])
+                                        icono = "🟢" if var_24h >= 0 else "🔴"
+                                        respuesta = f"💰 *Precio de {token_solicitado}:*\n\n💵 `${precio:,.4f}`\n📊 *Var. Binance 24h:* {icono} {var_24h:.2f}%"
+                                    except Exception:
+                                        respuesta = f"❌ El token *{token_solicitado}* no fue encontrado en Binance Futuros."
+                                else:
+                                    respuesta = "💡 Uso correcto: `/precio btc`"
+                                    
+                                # URL COMPLETA DIRECTA para responder
+                                url_send = f"https://telegram.org{TELEGRAM_TOKEN}/sendMessage"
+                                requests.post(url_send, json={"chat_id": TELEGRAM_CHAT_ID, "text": respuesta, "parse_mode": "Markdown"})
+    except Exception as e:
+        pass
+
 def ejecutar_radar_dual():
-    print("🛸 Radar Dual Aislado iniciado en Railway...")
-    MAX_ELEMENTOS_1H = 2   # Guarda solo 2 minutos para la prueba rápida     
+    print("🛸 Radar Dual Unificado con Comandos Activos en Railway...")
+    MAX_ELEMENTOS_1H = 2        
     MAX_ELEMENTOS_24H = 1440     
     
     while True:
@@ -82,7 +131,11 @@ def ejecutar_radar_dual():
             print("⏳ Ciclo de escaneo completado.")
         except Exception as e:
             print(f"⚠️ Error: {e}")
-        time.sleep(INTERVALO_BASE)
+            
+        # El script revisa Telegram 60 veces (una por segundo) antes de volver a escanear Binance
+        for _ in range(INTERVALO_BASE):
+            revisar_comandos_unificado()
+            time.sleep(1)
 
 if __name__ == "__main__":
     ejecutar_radar_dual()
